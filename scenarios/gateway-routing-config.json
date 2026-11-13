@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "gateway-routing-config",
+  "publicId": "gateway-01",
+  "title": "Gateway requests return errors",
+  "briefing": "An aggregate gateway alert has fired. Determine which diagnostic would isolate the failing traffic.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "compare_gateway_rollout",
+      "label": "Compare rollout cohorts",
+      "criteria": "Use when errors appear during a staged gateway change and cohort timing could distinguish a regression.",
+      "instructions": "Compare error rates for the previous and current gateway deployment cohorts."
+    },
+    {
+      "id": "inspect_backend_pool_route",
+      "label": "Inspect the selected backend pool",
+      "criteria": "Use when failing requests are routed to a pool whose traffic assignment conflicts with the configuration.",
+      "instructions": "Compare the actual backend pool in failed traces with the expected pool for those requests."
+    },
+    {
+      "id": "inspect_edge_transport",
+      "label": "Inspect gateway transport errors",
+      "criteria": "Use when failures appear before routing or cluster around a TLS or connection error.",
+      "instructions": "Compare handshake and connection errors across gateway regions and backend pools."
+    }
+  ],
+  "fallback": "Collect a failed gateway trace with its deployment cohort and backend selection.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T16:00:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T16:02:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T16:04:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T16:00:00Z",
+      "availableAt": "2026-11-11T16:00:00Z",
+      "source": "gateway-alerts",
+      "kind": "alert",
+      "text": "The gateway 5xx rate rose from 0.2% to 3.5% during a staged rollout. Both gateway versions are currently serving traffic, and the aggregate alert has no cohort breakdown."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T16:02:00Z",
+      "availableAt": "2026-11-11T16:02:00Z",
+      "source": "gateway-deployments",
+      "kind": "deploy",
+      "text": "Staged gateway release edge-104 started at 15:59 UTC and reached 15% traffic at 16:02. The prior gateway continues to handle the remaining requests."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T16:03:00Z",
+      "availableAt": "2026-11-11T16:03:00Z",
+      "source": "route-registry",
+      "kind": "config",
+      "text": "The new rollout must send EU merchant requests to pool blue. Pool amber is configured for APAC merchants."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-11T16:04:00Z",
+      "availableAt": "2026-11-11T16:04:00Z",
+      "source": "gateway-traces",
+      "kind": "trace",
+      "text": "Failed requests share region=EU, deployment=edge-104, and backend=amber."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "compare_gateway_rollout",
+      "evidenceId": "evt_001"
+    },
+    "follow-up": {
+      "actionId": "compare_gateway_rollout",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_backend_pool_route",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "The staged gateway release selected the APAC pool for EU merchant requests. Comparing the observed pool to the routing registry made the mismatch actionable.",
+    "lessons": [
+      "Cohort comparisons help narrow a deploy-related failure.",
+      "An opaque pool label becomes diagnostic when paired with the routing configuration."
+    ]
+  }
+}

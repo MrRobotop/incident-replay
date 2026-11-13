@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "id": "checkout-pool-pressure",
+  "publicId": "checkout-01",
+  "title": "Checkout errors rising",
+  "briefing": "You are on call for checkout. Orders are failing above the alert threshold. Review the evidence available at each checkpoint and choose one read-only diagnostic.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "inspect_pool_metrics",
+      "label": "Inspect checkout database pool metrics",
+      "criteria": "Use when worker logs or traces point to waits or timeouts while borrowing database connections.",
+      "instructions": "Open the checkout worker pool dashboard. Compare active versus maximum connections and acquisition latency before and after 14:02 UTC."
+    },
+    {
+      "id": "compare_deploy_timeline",
+      "label": "Compare deploy and error timelines",
+      "criteria": "Use when a recent deploy is visible near the start of failures and component-level timing could distinguish a regression from an unrelated event.",
+      "instructions": "Compare the frontend release time with the first checkout failures. Break down errors by service and deployed version."
+    },
+    {
+      "id": "inspect_upstream_status",
+      "label": "Inspect upstream dependency health",
+      "criteria": "Use when evidence points to failures or increased latency on calls from checkout to a remote dependency.",
+      "instructions": "Open the checkout dependency dashboard and compare timeout and 5xx rates by upstream service against the previous hour."
+    }
+  ],
+  "fallback": "Collect the checkout error breakdown by service and the first failing request trace, then reassess the diagnostic options.",
+  "checkpoints": [
+    {
+      "id": "initial-alert",
+      "cutoffAt": "2026-11-10T14:08:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "deploy-visible",
+      "cutoffAt": "2026-11-10T14:10:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "worker-telemetry",
+      "cutoffAt": "2026-11-10T14:13:00Z",
+      "observationEventId": "evt_003"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-10T14:08:00Z",
+      "availableAt": "2026-11-10T14:08:00Z",
+      "source": "checkout-alerts",
+      "kind": "alert",
+      "text": "Checkout completion failures reached 7.8% over five minutes, up from a baseline below 0.5%. The alert has no service or error-code breakdown."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-10T14:06:00Z",
+      "availableAt": "2026-11-10T14:10:00Z",
+      "source": "frontend-deployments",
+      "kind": "deploy",
+      "text": "Checkout frontend release web-217 completed at 14:06 UTC. The deployment marker reached the on-call timeline at 14:10 UTC. The checkout worker version stayed at worker-082."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-10T14:02:00Z",
+      "availableAt": "2026-11-10T14:13:00Z",
+      "source": "checkout-worker",
+      "kind": "log",
+      "text": "Delayed worker logs show repeated database connection acquisition timeouts beginning at 14:02 UTC. The worker waited 2,000 ms to borrow a connection before each affected checkout request failed."
+    }
+  ],
+  "demo": {
+    "initial-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "deploy-visible": {
+      "actionId": "compare_deploy_timeline",
+      "evidenceId": "evt_002"
+    },
+    "worker-telemetry": {
+      "actionId": "inspect_pool_metrics",
+      "evidenceId": "evt_003"
+    }
+  },
+  "debrief": {
+    "summary": "A follow-up checkout trace confirmed requests spent the timeout window waiting to borrow a database connection from the checkout worker pool. The frontend release was unrelated. The first pool timeouts began four minutes before that release completed.",
+    "lessons": [
+      "A generic alert can establish impact while leaving the most useful diagnostic uncertain.",
+      "Compare the time an event occurred with the time it became available to the investigator.",
+      "Use pool utilization and connection acquisition latency to confirm whether database pool pressure explains the failing requests."
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "scenarioId": "inventory-cache-expiry",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "cache-routing",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "compare_cache_age",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_namespace_mapping",
+      "evidenceIds": [
+        "evt_003"
+      ]
+    }
+  }
+}

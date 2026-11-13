@@ -1,0 +1,26 @@
+{
+  "scenarioId": "search-index-rollout",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "deployment",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "compare_search_cutover",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_query_mapping",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}

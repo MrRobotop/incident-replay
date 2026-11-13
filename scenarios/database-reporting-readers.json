@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "database-reporting-readers",
+  "publicId": "reporting-01",
+  "title": "Reports are slow",
+  "briefing": "Analysts say scheduled reports are taking longer than usual. Investigate the report request path.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "compare_query_plans",
+      "label": "Compare plans for slow queries",
+      "criteria": "Use when a limited set of query fingerprints gets slower after a query or index change.",
+      "instructions": "Compare saved query plans for the affected fingerprints and inspect the plan history."
+    },
+    {
+      "id": "inspect_reader_pool",
+      "label": "Inspect report reader pool waits",
+      "criteria": "Use when reporting requests queue before opening a reader connection.",
+      "instructions": "Compare reader pool queue depth and connection acquisition latency with query execution time."
+    },
+    {
+      "id": "check_scheduler_lag",
+      "label": "Check report scheduler lag",
+      "criteria": "Use when jobs start late and the delay may be in scheduling rather than execution.",
+      "instructions": "Compare job eligibility time with the scheduler dispatch timestamp."
+    }
+  ],
+  "fallback": "Collect one job dispatch timestamp and its matching request timing breakdown.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T11:00:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T11:02:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T11:05:00Z",
+      "observationEventId": "evt_003"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T11:00:00Z",
+      "availableAt": "2026-11-11T11:00:00Z",
+      "source": "reporting-alerts",
+      "kind": "alert",
+      "text": "Scheduled report duration is above 90 seconds. The alert covers total runtime only."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T11:02:00Z",
+      "availableAt": "2026-11-11T11:02:00Z",
+      "source": "report-scheduler",
+      "kind": "log",
+      "text": "Reporting jobs scheduled at 11:00 did not enter the execution queue until 11:02. The delayed jobs span two query templates."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T11:01:00Z",
+      "availableAt": "2026-11-11T11:05:00Z",
+      "source": "reader-traces",
+      "kind": "trace",
+      "text": "Reports acquired a worker on schedule in the execution service, but all waits occurred inside its shared reader pool. The scheduler dispatch event records acknowledgement after the worker acquires a reader."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "check_scheduler_lag",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_reader_pool",
+      "evidenceId": "evt_003"
+    }
+  },
+  "debrief": {
+    "summary": "A connection pool queue delayed acknowledgement of dispatch. Once a report acquired a connection, its database execution time was normal.",
+    "lessons": [
+      "Check what a dispatch timestamp records before interpreting the gap as scheduler delay.",
+      "Compare database query duration with the wait to acquire a connection."
+    ]
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "inventory-cache-expiry",
+  "publicId": "inventory-01",
+  "title": "Inventory counts differ",
+  "briefing": "Storefront availability and warehouse records disagree for several products. Isolate the source of the discrepancy.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "compare_cache_age",
+      "label": "Compare cache age with policy",
+      "criteria": "Use when edge entries are older than expected and expiry behavior has not been verified.",
+      "instructions": "Compare response age and the current expiry policy for affected products and warehouses."
+    },
+    {
+      "id": "inspect_namespace_mapping",
+      "label": "Inspect inventory namespace mapping",
+      "criteria": "Use when cache reads and inventory updates could use different namespaces for the same warehouse.",
+      "instructions": "Join read and update traces by warehouse and product, then compare the namespace fields."
+    },
+    {
+      "id": "inspect_inventory_updates",
+      "label": "Inspect inventory event processing",
+      "criteria": "Use when inventory update events are absent or processing is delayed.",
+      "instructions": "Compare inventory message timestamps against update consumer lag and missing-event counters."
+    }
+  ],
+  "fallback": "Capture a product and warehouse pair, then collect its inventory update and corresponding storefront response.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T18:45:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T18:46:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T18:49:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T18:45:00Z",
+      "availableAt": "2026-11-11T18:45:00Z",
+      "source": "storefront-alerts",
+      "kind": "alert",
+      "text": "Inventory freshness SLO missed for 3% of responses. The alert does not list affected warehouses."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T18:46:00Z",
+      "availableAt": "2026-11-11T18:46:00Z",
+      "source": "inventory-edge",
+      "kind": "log",
+      "text": "For SKU 301 at warehouse W7, the storefront is serving age=820 seconds from cache. Freshness for this response class is 120 seconds. Read namespace=stock-v1-W7."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T18:46:00Z",
+      "availableAt": "2026-11-11T18:48:00Z",
+      "source": "inventory-writer",
+      "kind": "log",
+      "text": "The update for SKU 301 at W7 was accepted at 18:46 UTC. Write namespace=stock-v2-W7."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-11T18:49:00Z",
+      "availableAt": "2026-11-11T18:49:00Z",
+      "source": "inventory-edge",
+      "kind": "metric",
+      "text": "A second sample shows SKU 301 at W7 is still returning the cached response. The worker queue is within its lag objective."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "compare_cache_age",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_namespace_mapping",
+      "evidenceId": "evt_003"
+    }
+  },
+  "debrief": {
+    "summary": "The writer had moved to the new namespace while the edge continued reading the old namespace. The cache age reflected that split.",
+    "lessons": [
+      "Use the same warehouse and product identifiers when matching read and write records.",
+      "A normal consumer lag figure can coexist with stale data in a separate namespace."
+    ]
+  }
+}

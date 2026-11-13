@@ -1,0 +1,26 @@
+{
+  "scenarioId": "media-worker-restarts",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "worker-runtime",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "inspect_worker_restarts",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "compare_decoded_memory",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}

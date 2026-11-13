@@ -1,0 +1,26 @@
+{
+  "scenarioId": "warehouse-consumer-lag",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "queue-partitioning",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "compare_partition_lag",
+      "evidenceIds": [
+        "evt_001"
+      ]
+    },
+    "follow-up": {
+      "actionId": "compare_partition_lag",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_routing_key_skew",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}

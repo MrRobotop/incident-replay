@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "events-webhook-attempts",
+  "publicId": "webhooks-01",
+  "title": "Webhook delivery delay",
+  "briefing": "Integration teams report missing webhook deliveries. Investigate the sender, queue, and external receiver.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "check_retry_backlog",
+      "label": "Check webhook retry backlog",
+      "criteria": "Use when retry jobs accumulate faster than the worker can drain them.",
+      "instructions": "Compare new retry enqueues with completed retry attempts and available workers."
+    },
+    {
+      "id": "inspect_receiver_tls",
+      "label": "Inspect receiver TLS failures",
+      "criteria": "Use when external delivery attempts fail during certificate validation or TLS negotiation.",
+      "instructions": "Compare TLS error codes and receiver certificate chain metadata across failed deliveries."
+    },
+    {
+      "id": "compare_payload_versions",
+      "label": "Compare webhook payload versions",
+      "criteria": "Use when response errors suggest the receiver rejects a changed request format.",
+      "instructions": "Compare the payload version and response status for recent accepted and rejected deliveries."
+    }
+  ],
+  "fallback": "Collect the outcome of one failed attempt and the timestamp of its latest queued retry.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T14:40:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T14:43:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T14:45:00Z",
+      "observationEventId": "evt_003"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T14:40:00Z",
+      "availableAt": "2026-11-11T14:40:00Z",
+      "source": "delivery-alerts",
+      "kind": "alert",
+      "text": "Delivery age exceeded 12 minutes. The aggregate alert includes all webhook tenants."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T14:43:00Z",
+      "availableAt": "2026-11-11T14:43:00Z",
+      "source": "webhook-queue",
+      "kind": "metric",
+      "text": "The retry queue grew from 30 to 2,100 pending attempts after 14:40. First-attempt and retry failure reasons have not reached the dashboard."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T14:41:00Z",
+      "availableAt": "2026-11-11T14:45:00Z",
+      "source": "webhook-transport",
+      "kind": "log",
+      "text": "First and retry attempts to receiver group R17 all stop before HTTP negotiation. Certificate verification reports a missing intermediate for that group. Other receiver groups succeed with the same payload version."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "check_retry_backlog",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_receiver_tls",
+      "evidenceId": "evt_003"
+    }
+  },
+  "debrief": {
+    "summary": "A receiver certificate chain was missing its intermediate. Repeated attempts grew the queue while the other receiver groups continued to accept deliveries.",
+    "lessons": [
+      "Inspect the earliest failed network stage before investigating payload format.",
+      "Treat retry queue growth as a possible consequence of repeated transport errors."
+    ]
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "payments-callback-telemetry",
+  "publicId": "payments-01",
+  "title": "Confirmation callbacks are missing",
+  "briefing": "Some payment confirmations are late. Decide whether the current evidence supports a specific diagnostic.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "inspect_provider_callback_status",
+      "label": "Inspect provider callback delivery status",
+      "criteria": "Use when evidence includes a provider delivery failure or an affected provider transaction ID.",
+      "instructions": "Compare provider delivery attempts with the affected payment confirmation IDs."
+    },
+    {
+      "id": "inspect_callback_receiver",
+      "label": "Inspect the callback receiver",
+      "criteria": "Use when inbound receiver logs indicate authentication failures or rejected callback requests.",
+      "instructions": "Compare receiver responses and authentication checks for the affected callbacks."
+    },
+    {
+      "id": "inspect_callback_processing",
+      "label": "Inspect callback processing lag",
+      "criteria": "Use when callbacks reached the receiver but remain unprocessed.",
+      "instructions": "Compare receipt timestamps with processing checkpoints for the affected callbacks."
+    }
+  ],
+  "fallback": "Collect the provider transaction ID and the corresponding callback receipt or delivery attempt timestamp.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-12T05:15:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-12T05:17:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-12T05:19:00Z",
+      "observationEventId": "evt_003"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-12T05:15:00Z",
+      "availableAt": "2026-11-12T05:15:00Z",
+      "source": "confirmation-alerts",
+      "kind": "alert",
+      "text": "Some payment confirmation views remain pending after two minutes. The aggregate sample has no transaction IDs."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-12T05:17:00Z",
+      "availableAt": "2026-11-12T05:17:00Z",
+      "source": "confirmation-monitor",
+      "kind": "metric",
+      "text": "Provider status page is healthy. It reports checkout authorizations and has no callback delivery metrics."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-12T05:19:00Z",
+      "availableAt": "2026-11-12T05:19:00Z",
+      "source": "telemetry-ingestion",
+      "kind": "log",
+      "text": "Callback receiver telemetry is delayed by 20 minutes and no sample from the affected window has arrived. A dashboard currently shows counts from before 05:00 UTC."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "additional-evidence": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    }
+  },
+  "debrief": {
+    "summary": "The replay stopped before correlated callback data became available. A green authorization status and older receiver counts left the competing hypotheses open.",
+    "lessons": [
+      "Check the measurement scope and sampling window before relying on a green indicator.",
+      "Use a correlated payment ID to connect callback delivery, receipt, and processing."
+    ]
+  }
+}

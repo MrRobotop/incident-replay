@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "notifications-provider-errors",
+  "publicId": "notifications-01",
+  "title": "Notification sends are delayed",
+  "briefing": "Customer notifications are arriving late. Investigate before assuming either the delivery worker or provider is at fault.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "inspect_provider_rate_limit",
+      "label": "Inspect provider quota saturation",
+      "criteria": "Use when the provider rejects sends with a throttling response for a sender class.",
+      "instructions": "Compare provider quota counters and retry-after timing by sender class."
+    },
+    {
+      "id": "inspect_provider_auth",
+      "label": "Inspect provider credential errors",
+      "criteria": "Use when the provider response indicates credentials or sender authorization have failed.",
+      "instructions": "Compare credential version metadata against authorization response counts."
+    },
+    {
+      "id": "inspect_worker_queue",
+      "label": "Inspect the send queue",
+      "criteria": "Use when queue age rises and current evidence does not show external rejection.",
+      "instructions": "Compare queue age, claim rate, and active notification workers."
+    }
+  ],
+  "fallback": "Capture one provider response code, the sender class, and the matching code table revision.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T23:00:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T23:02:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T23:04:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T23:00:00Z",
+      "availableAt": "2026-11-11T23:00:00Z",
+      "source": "notification-alerts",
+      "kind": "alert",
+      "text": "Customer notification delay rose above ten minutes. The alert does not specify a stage."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T23:02:00Z",
+      "availableAt": "2026-11-11T23:02:00Z",
+      "source": "notification-worker",
+      "kind": "metric",
+      "text": "Send queue age is increasing and worker instances are active. Provider response outcomes have not populated."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T23:00:00Z",
+      "availableAt": "2026-11-11T23:03:00Z",
+      "source": "provider-runbook",
+      "kind": "runbook",
+      "text": "The notification gateway emits sender-specific numeric status codes. For sender class B4, code 774 means sender quota exceeded. For class P9, 774 means credentials invalid."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-11T23:04:00Z",
+      "availableAt": "2026-11-11T23:04:00Z",
+      "source": "delivery-gateway",
+      "kind": "log",
+      "text": "The sampled rejected sends have sender class B4 and status 774."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "inspect_worker_queue",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_provider_rate_limit",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "The provider throttled sender class B4. The same numeric status meant something different for another sender class, which made the mapping essential.",
+    "lessons": [
+      "Decode provider codes in the context of their sender or account class.",
+      "Separate queue symptoms from the rejection that creates them."
+    ]
+  }
+}

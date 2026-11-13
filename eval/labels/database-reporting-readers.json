@@ -1,0 +1,26 @@
+{
+  "scenarioId": "database-reporting-readers",
+  "scenarioVersion": 1,
+  "split": "development",
+  "family": "database-pool",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "check_scheduler_lag",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_reader_pool",
+      "evidenceIds": [
+        "evt_003"
+      ]
+    }
+  }
+}

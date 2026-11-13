@@ -1,0 +1,26 @@
+{
+  "scenarioId": "events-webhook-attempts",
+  "scenarioVersion": 1,
+  "split": "development",
+  "family": "upstream",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "check_retry_backlog",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_receiver_tls",
+      "evidenceIds": [
+        "evt_003"
+      ]
+    }
+  }
+}

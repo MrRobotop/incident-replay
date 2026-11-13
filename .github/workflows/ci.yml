@@ -1,0 +1,49 @@
+name: Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  INCIDENT_REPLAY_MODE: demo
+  SUBQ_API_KEY: ""
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run eval -- --mode demo --split all
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium --only-shell
+      - run: npm run test:browser
+      - name: Smoke-test the container
+        run: |
+          docker build -t incident-replay:ci .
+          docker run -d --name incident-replay-ci -p 127.0.0.1:3000:3000 incident-replay:ci
+          trap 'docker rm -f incident-replay-ci >/dev/null' EXIT
+          curl --fail --silent --show-error --retry 10 --retry-all-errors http://127.0.0.1:3000/api/health
+          curl --fail --silent --show-error -H 'Origin: http://localhost:3000' -H 'Content-Type: application/json' \
+            -d '{"scenarioId":"checkout-01","checkpointId":"checkpoint-3"}' http://127.0.0.1:3000/api/decisions |
+            node --input-type=module -e 'let text = ""; for await (const chunk of process.stdin) text += chunk; const result = JSON.parse(text); if (result.mode !== "demo" || result.evidence?.id !== "evt_003") process.exit(1)'

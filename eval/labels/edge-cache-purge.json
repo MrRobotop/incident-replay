@@ -1,0 +1,26 @@
+{
+  "scenarioId": "edge-cache-purge",
+  "scenarioVersion": 1,
+  "split": "development",
+  "family": "cache-routing",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "compare_origin_responses",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_purge_key",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}

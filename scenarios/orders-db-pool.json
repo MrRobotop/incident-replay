@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "orders-db-pool",
+  "publicId": "orders-01",
+  "title": "Order writes slow down",
+  "briefing": "Order writes are slower than the service objective. Investigate where write requests spend their time.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "inspect_write_locks",
+      "label": "Inspect write lock waits",
+      "criteria": "Use when requests acquire database connections promptly but database execution shows lock waits.",
+      "instructions": "Compare lock wait counters and blocking transactions for order writes."
+    },
+    {
+      "id": "inspect_orders_pool",
+      "label": "Inspect order writer connection pool",
+      "criteria": "Use when order write requests spend most of their time acquiring a database connection.",
+      "instructions": "Compare writer pool utilization and connection acquisition time against query execution time."
+    },
+    {
+      "id": "compare_write_rollout",
+      "label": "Compare writer rollout cohorts",
+      "criteria": "Use when errors align with a writer release and old and new cohorts show different behavior.",
+      "instructions": "Compare write latency and errors between the previous and current writer versions."
+    }
+  ],
+  "fallback": "Collect a trace with acquisition, execution, and response stage timings for one slow write.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-12T02:50:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-12T02:52:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-12T02:54:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-12T02:50:00Z",
+      "availableAt": "2026-11-12T02:50:00Z",
+      "source": "order-alerts",
+      "kind": "alert",
+      "text": "Order write latency p99 exceeds 1.5 seconds. No stage-level timing is attached."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-12T02:52:00Z",
+      "availableAt": "2026-11-12T02:52:00Z",
+      "source": "orders-tracing",
+      "kind": "trace",
+      "text": "At 02:52 UTC the first trace sample shows acquire=3 ms, execution=1,450 ms, and wait_type=lock on the primary."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-12T02:51:00Z",
+      "availableAt": "2026-11-12T02:54:00Z",
+      "source": "orders-runbook",
+      "kind": "runbook",
+      "text": "The orders trace redaction map uses stage W1 for pool connection acquisition and W2 for database execution. Use the predominant breakdown across a batch over a single trace sample."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-12T02:54:00Z",
+      "availableAt": "2026-11-12T02:54:00Z",
+      "source": "orders-tracing",
+      "kind": "trace",
+      "text": "New 200-trace batch for slow order writes: 184 traces show W1 over 1,300 ms and W2 below 40 ms. The remaining 16 are mixed."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "inspect_write_locks",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_orders_pool",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "The first sampled trace had a real lock wait, but most of the affected requests spent time acquiring a connection from the shared writer pool.",
+    "lessons": [
+      "An early trace can suggest a reasonable diagnostic without representing most failures.",
+      "Decode trace stage identifiers and compare timings across a sample."
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "scenarioId": "payments-callback-telemetry",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "missing-telemetry",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    }
+  }
+}

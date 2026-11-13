@@ -1,0 +1,26 @@
+{
+  "scenarioId": "gateway-routing-config",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "deployment",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "compare_gateway_rollout",
+      "evidenceIds": [
+        "evt_001"
+      ]
+    },
+    "follow-up": {
+      "actionId": "compare_gateway_rollout",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_backend_pool_route",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}

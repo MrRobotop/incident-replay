@@ -1,0 +1,20 @@
+{
+  "scenarioId": "checkout-pool-pressure",
+  "scenarioVersion": 1,
+  "split": "development",
+  "family": "database-pool",
+  "checkpoints": {
+    "initial-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": ["no_evidence"]
+    },
+    "deploy-visible": {
+      "actionId": "compare_deploy_timeline",
+      "evidenceIds": ["evt_002"]
+    },
+    "worker-telemetry": {
+      "actionId": "inspect_pool_metrics",
+      "evidenceIds": ["evt_003"]
+    }
+  }
+}

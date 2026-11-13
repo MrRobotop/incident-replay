@@ -1,0 +1,26 @@
+{
+  "scenarioId": "notifications-provider-errors",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "upstream",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "inspect_worker_queue",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_provider_rate_limit",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}

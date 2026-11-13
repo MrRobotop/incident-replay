@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "search-index-rollout",
+  "publicId": "search-01",
+  "title": "Search queries are being rejected",
+  "briefing": "A subset of catalog searches fails. Identify which check would best narrow the query failures.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "compare_search_cutover",
+      "label": "Compare index cutover cohorts",
+      "criteria": "Use when query errors appear close to an index switch and cohort isolation can test the relationship.",
+      "instructions": "Compare error rates for requests served by the old and new indexes."
+    },
+    {
+      "id": "inspect_query_mapping",
+      "label": "Inspect query and index field mappings",
+      "criteria": "Use when rejection evidence indicates a query field is incompatible with the active index schema.",
+      "instructions": "Compare the failing query fields with mappings in the old and new indexes."
+    },
+    {
+      "id": "inspect_search_capacity",
+      "label": "Inspect search shard capacity",
+      "criteria": "Use when queue depth, latency, or resource pressure suggests a capacity problem.",
+      "instructions": "Compare CPU, memory, and request queue depth across search shards."
+    }
+  ],
+  "fallback": "Collect an affected search request and its serving index and response reason.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-12T06:30:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-12T06:32:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-12T06:34:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-12T06:30:00Z",
+      "availableAt": "2026-11-12T06:30:00Z",
+      "source": "search-alerts",
+      "kind": "alert",
+      "text": "Search failure ratio doubled. The alert is grouped across query and index types."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-12T06:32:00Z",
+      "availableAt": "2026-11-12T06:32:00Z",
+      "source": "index-deployments",
+      "kind": "deploy",
+      "text": "At 06:31 UTC, 20% of the catalog search traffic began using catalog-v5. Other traffic still goes to catalog-v4."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-12T06:30:00Z",
+      "availableAt": "2026-11-12T06:33:00Z",
+      "source": "search-runbook",
+      "kind": "runbook",
+      "text": "The query gateway reports Q17 when a query sends a field incompatible with the index mapping. Q09 signals a shard request deadline."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-12T06:34:00Z",
+      "availableAt": "2026-11-12T06:34:00Z",
+      "source": "search-gateway",
+      "kind": "log",
+      "text": "Affected requests are grouped as reason=Q17, index=catalog-v5, field=variants.price. The baseline cohort is catalog-v4."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "compare_search_cutover",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_query_mapping",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "The v5 mapping exposed variants.price as text while the numeric price filter still sent a range query. The new cohort made the error visible.",
+    "lessons": [
+      "Cohort membership can reveal an incident caused by a genuine rollout regression.",
+      "Translate the gateway reason before choosing mapping inspection or capacity inspection."
+    ]
+  }
+}

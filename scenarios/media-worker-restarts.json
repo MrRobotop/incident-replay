@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "media-worker-restarts",
+  "publicId": "media-01",
+  "title": "Media jobs finish late",
+  "briefing": "Processing latency has increased for media jobs. Inspect processing progress and recent worker signals.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "inspect_worker_restarts",
+      "label": "Inspect media worker restarts",
+      "criteria": "Use when jobs stop during processing or restart counts rise without a known cause.",
+      "instructions": "Compare worker start times, process exit reasons, and job progress markers."
+    },
+    {
+      "id": "compare_decoded_memory",
+      "label": "Compare decoded image memory",
+      "criteria": "Use when affected image dimensions or frame counts plausibly exceed the worker memory budget.",
+      "instructions": "Estimate decoded pixels and bytes per frame for affected jobs, then compare with the worker memory limit."
+    },
+    {
+      "id": "inspect_object_storage",
+      "label": "Inspect object storage download latency",
+      "criteria": "Use when worker delays occur while fetching input objects.",
+      "instructions": "Compare download latency and response errors for affected and healthy objects."
+    }
+  ],
+  "fallback": "Collect a job ID, its last processing stage, and one worker lifecycle event for that job.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T21:30:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T21:32:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T21:34:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T21:30:00Z",
+      "availableAt": "2026-11-11T21:30:00Z",
+      "source": "media-alerts",
+      "kind": "alert",
+      "text": "Media job completion latency exceeded 120 seconds. No stage breakdown is attached."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T21:32:00Z",
+      "availableAt": "2026-11-11T21:32:00Z",
+      "source": "worker-orchestrator",
+      "kind": "log",
+      "text": "Three media workers restarted while processing jobs from class M38. Inputs were fetched successfully before all three restarts. Exit reasons have not arrived."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T21:32:00Z",
+      "availableAt": "2026-11-11T21:34:00Z",
+      "source": "worker-runtime",
+      "kind": "config",
+      "text": "Class M38 image workers have a 384 MiB memory limit. The decoder holds the uncompressed four-channel image in memory during conversion."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-11T21:33:00Z",
+      "availableAt": "2026-11-11T21:34:00Z",
+      "source": "media-ingress",
+      "kind": "log",
+      "text": "Input metadata sampled for class M38: 12000 by 12000 pixels, four channels, one byte per channel."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "inspect_worker_restarts",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "compare_decoded_memory",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "Class M38 included inputs whose decoded pixel buffer alone exceeded the worker memory limit. The orchestrator later confirmed memory-limit termination.",
+    "lessons": [
+      "Compressed object size is a poor proxy for decoding memory.",
+      "Compare decoded dimensions with the memory budget for the affected worker class."
+    ]
+  }
+}

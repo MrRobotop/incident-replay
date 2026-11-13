@@ -1,0 +1,23 @@
+[
+  {
+    "occurredAt": "2026-11-13T14:08:00Z",
+    "availableAt": "2026-11-13T14:08:00Z",
+    "source": "checkout-alerts",
+    "kind": "alert",
+    "text": "Checkout completion failures reached 7.8% over five minutes."
+  },
+  {
+    "occurredAt": "2026-11-13T14:06:00Z",
+    "availableAt": "2026-11-13T14:10:00Z",
+    "source": "frontend-deployments",
+    "kind": "deploy",
+    "text": "The checkout frontend release completed. The checkout worker version was unchanged."
+  },
+  {
+    "occurredAt": "2026-11-13T14:02:00Z",
+    "availableAt": "2026-11-13T14:13:00Z",
+    "source": "checkout-worker",
+    "kind": "log",
+    "text": "Several checkout requests timed out while waiting to acquire a database connection."
+  }
+]

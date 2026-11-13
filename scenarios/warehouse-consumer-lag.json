@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "warehouse-consumer-lag",
+  "publicId": "warehouse-01",
+  "title": "Warehouse events arrive late",
+  "briefing": "Warehouse dispatch state is taking longer to update. Use queue and routing records to narrow the backlog.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "compare_partition_lag",
+      "label": "Compare lag by consumer partition",
+      "criteria": "Use when lag is elevated but it is unclear whether it affects all consumers or a subset of partitions.",
+      "instructions": "Compare lag, throughput, and consumer assignment across warehouse event partitions."
+    },
+    {
+      "id": "inspect_routing_key_skew",
+      "label": "Inspect routing-key skew",
+      "criteria": "Use when unrelated traffic is concentrated on one partition because a common or missing key collapses the distribution.",
+      "instructions": "Compare routing key frequencies and their partition assignments for affected event producers."
+    },
+    {
+      "id": "inspect_consumer_checkpoint",
+      "label": "Inspect consumer checkpoint delays",
+      "criteria": "Use when events are consumed but offset commits are failing or delayed across partitions.",
+      "instructions": "Compare processing completions with offset commit outcomes and checkpoint timestamps."
+    }
+  ],
+  "fallback": "Collect a per-partition lag snapshot and one affected event with its routing key and offset.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-12T09:00:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-12T09:02:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-12T09:04:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-12T09:00:00Z",
+      "availableAt": "2026-11-12T09:00:00Z",
+      "source": "warehouse-alerts",
+      "kind": "alert",
+      "text": "Dispatch update age exceeded six minutes and the broker reports increased consumer lag. No partition breakdown is attached."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-12T09:02:00Z",
+      "availableAt": "2026-11-12T09:02:00Z",
+      "source": "warehouse-broker",
+      "kind": "metric",
+      "text": "Lag rose on partition 7 while partitions 1 through 6 and 8 through 12 stayed close to their baseline."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-12T09:01:00Z",
+      "availableAt": "2026-11-12T09:03:00Z",
+      "source": "warehouse-routing",
+      "kind": "config",
+      "text": "Warehouse event publishers route by warehouse ID. An empty warehouse ID is replaced with default-v2, which the broker hashes to partition 7."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-12T09:04:00Z",
+      "availableAt": "2026-11-12T09:04:00Z",
+      "source": "warehouse-broker",
+      "kind": "log",
+      "text": "Of 20,000 messages recently routed to partition 7, 19,600 carried key=default-v2. Offset commits for partition 7 continued to succeed."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "compare_partition_lag",
+      "evidenceId": "evt_001"
+    },
+    "follow-up": {
+      "actionId": "compare_partition_lag",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_routing_key_skew",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "One producer emitted dispatch events without warehouse IDs. The common fallback key sent almost all of them to the same partition.",
+    "lessons": [
+      "A lagging partition is compatible with successful consumer checkpoints.",
+      "Join routing policy with observed key frequencies to distinguish assignment skew from consumer stalls."
+    ]
+  }
+}

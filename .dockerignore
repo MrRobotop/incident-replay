@@ -1,0 +1,10 @@
+**
+!package.json
+!package-lock.json
+!LICENSE
+!tsconfig.json
+!next.config.ts
+!src/
+!src/**
+!scenarios/
+!scenarios/*.json

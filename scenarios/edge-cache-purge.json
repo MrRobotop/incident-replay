@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "edge-cache-purge",
+  "publicId": "edge-01",
+  "title": "Catalog pages show older prices",
+  "briefing": "A support escalation reports old prices on a subset of catalog pages. Use edge and origin records to narrow the issue.",
+  "version": 1,
+  "actions": [
+    {
+      "id": "compare_origin_responses",
+      "label": "Compare the catalog origin response",
+      "criteria": "Use when it is unclear whether old content comes from origin or the cache.",
+      "instructions": "Compare the origin revision with the affected edge response for the same product and locale."
+    },
+    {
+      "id": "inspect_purge_key",
+      "label": "Inspect the purge key mapping",
+      "criteria": "Use when the purge addresses a different cache key than the affected request.",
+      "instructions": "Compare the request cache key fields with the cache purge selector."
+    },
+    {
+      "id": "inspect_edge_health",
+      "label": "Inspect regional edge health",
+      "criteria": "Use when a region-specific outage or increased edge failures could account for the symptom.",
+      "instructions": "Compare request volume, latency, and errors for the affected and healthy edge regions."
+    }
+  ],
+  "fallback": "Collect an affected product URL, its locale, and the corresponding edge response headers.",
+  "checkpoints": [
+    {
+      "id": "first-alert",
+      "cutoffAt": "2026-11-11T12:05:00Z",
+      "observationEventId": "evt_001"
+    },
+    {
+      "id": "follow-up",
+      "cutoffAt": "2026-11-11T12:07:00Z",
+      "observationEventId": "evt_002"
+    },
+    {
+      "id": "additional-evidence",
+      "cutoffAt": "2026-11-11T12:09:00Z",
+      "observationEventId": "evt_004"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "occurredAt": "2026-11-11T12:05:00Z",
+      "availableAt": "2026-11-11T12:05:00Z",
+      "source": "support-intake",
+      "kind": "alert",
+      "text": "Two customers report different prices for SKU 882. Tickets omit the source response, location, and cache status."
+    },
+    {
+      "id": "evt_002",
+      "occurredAt": "2026-11-11T12:07:00Z",
+      "availableAt": "2026-11-11T12:07:00Z",
+      "source": "catalog-gateway",
+      "kind": "log",
+      "text": "Affected catalog response: locale fr-CA, edge=HIT, revision=r71. The current expected revision is r72. The origin response for fr-CA was not sampled."
+    },
+    {
+      "id": "evt_003",
+      "occurredAt": "2026-11-11T12:06:00Z",
+      "availableAt": "2026-11-11T12:08:00Z",
+      "source": "cache-routing",
+      "kind": "config",
+      "text": "Catalog requests build the edge cache selector from the exact requested locale. The legacy locale group key is retained only for admin previews."
+    },
+    {
+      "id": "evt_004",
+      "occurredAt": "2026-11-11T12:09:00Z",
+      "availableAt": "2026-11-11T12:09:00Z",
+      "source": "cache-purger",
+      "kind": "log",
+      "text": "Purge completed successfully for SKU 882 and selector fr."
+    }
+  ],
+  "demo": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceId": "no_evidence"
+    },
+    "follow-up": {
+      "actionId": "compare_origin_responses",
+      "evidenceId": "evt_002"
+    },
+    "additional-evidence": {
+      "actionId": "inspect_purge_key",
+      "evidenceId": "evt_004"
+    }
+  },
+  "debrief": {
+    "summary": "The purge targeted fr while the affected edge request keyed its response under fr-CA. The origin already held the latest price.",
+    "lessons": [
+      "A successful purge can target the wrong key.",
+      "Pair the purge selector with the cache key definition and affected response."
+    ]
+  }
+}

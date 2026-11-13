@@ -1,0 +1,26 @@
+{
+  "scenarioId": "orders-db-pool",
+  "scenarioVersion": 1,
+  "split": "release",
+  "family": "database-pool",
+  "checkpoints": {
+    "first-alert": {
+      "actionId": "insufficient_evidence",
+      "evidenceIds": [
+        "no_evidence"
+      ]
+    },
+    "follow-up": {
+      "actionId": "inspect_write_locks",
+      "evidenceIds": [
+        "evt_002"
+      ]
+    },
+    "additional-evidence": {
+      "actionId": "inspect_orders_pool",
+      "evidenceIds": [
+        "evt_004"
+      ]
+    }
+  }
+}
